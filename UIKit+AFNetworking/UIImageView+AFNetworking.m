@@ -112,10 +112,69 @@
 - (void)setImageWithURL:(NSURL *)url
        placeholderImage:(UIImage *)placeholderImage
 {
+    [self setImageWithURL:url placeholderImage:placeholderImage newSize:CGSizeZero];
+}
+
+- (void)setImageWithURL:(NSURL *)url
+       placeholderImage:(UIImage *)placeholderImage
+            newSize:(CGSize)newSize
+{
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
-
-    [self setImageWithURLRequest:request placeholderImage:placeholderImage success:nil failure:nil];
+    
+    __weak __typeof(self)weakSelf = self;
+    [self setImageWithURLRequest:request placeholderImage:placeholderImage success:^(__unused NSURLRequest *aRequest, __unused NSHTTPURLResponse *aResponse, UIImage *image) {
+        __strong __typeof(weakSelf)strongSelf = weakSelf;
+        if (CGSizeEqualToSize(newSize, CGSizeZero)) {
+            strongSelf.image = image;
+        } else {
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                CGFloat sourceWidth  = image.size.width;
+                CGFloat sourceHeight = image.size.height;
+                CGFloat targetWidth  = newSize.width;
+                CGFloat targetHeight = newSize.height;
+                CGFloat scaleFactor = 0.0f;
+                CGFloat scaledWidth = targetWidth;
+                CGFloat scaledHeight = targetHeight;
+                CGPoint thumbnailPoint = CGPointMake(0.0,0.0);
+                
+                if (CGSizeEqualToSize(image.size, newSize) == NO) {
+                    CGFloat widthFactor = targetWidth / sourceWidth;
+                    CGFloat heightFactor = targetHeight / sourceHeight;
+                    
+                    if (widthFactor > heightFactor) {
+                        scaleFactor = widthFactor;  // Scale to fit height
+                    } else {
+                        scaleFactor = heightFactor; // Scale to fit width
+                    }
+                    
+                    scaledWidth  = sourceWidth * scaleFactor;
+                    scaledHeight = sourceHeight * scaleFactor;
+                    
+                    if (widthFactor > heightFactor) {
+                        // V: Top align
+                        thumbnailPoint.y = 0;
+                    } else if (widthFactor < heightFactor) {
+                        // H: Center align
+                        thumbnailPoint.x = (targetWidth - scaledWidth) * 0.5;
+                    }
+                }
+                
+                UIGraphicsBeginImageContextWithOptions(newSize, YES, image.scale);
+                CGRect thumbnailRect = CGRectZero;
+                thumbnailRect.origin = thumbnailPoint;
+                thumbnailRect.size.width  = scaledWidth;
+                thumbnailRect.size.height = scaledHeight;
+                [image drawInRect:thumbnailRect];
+                UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();
+                UIGraphicsEndImageContext();
+                
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    strongSelf.image = newImage;
+                });
+            });
+        }
+    } failure:nil];
 }
 
 - (void)setImageWithURLRequest:(NSURLRequest *)urlRequest
