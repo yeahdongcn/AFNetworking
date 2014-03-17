@@ -22,6 +22,8 @@
 
 #import "UIButton+AFNetworking.h"
 
+#import "UIImage+Fit.h"
+
 #import <objc/runtime.h>
 
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
@@ -42,7 +44,7 @@
         _af_sharedImageRequestOperationQueue = [[NSOperationQueue alloc] init];
         _af_sharedImageRequestOperationQueue.maxConcurrentOperationCount = NSOperationQueueDefaultMaxConcurrentOperationCount;
     });
-
+    
     return _af_sharedImageRequestOperationQueue;
 }
 
@@ -70,30 +72,46 @@
 
 - (void)setImageForState:(UIControlState)state
                  withURL:(NSURL *)url
+                 newSize:(CGSize)newSize
 {
-    [self setImageForState:state withURL:url placeholderImage:nil];
+    [self setImageForState:state withURL:url placeholderImage:nil newSize:newSize];
+}
+
+- (void)setImageForState:(UIControlState)state
+                 withURL:(NSURL *)url
+{
+    [self setImageForState:state withURL:url newSize:CGSizeZero];
+}
+
+- (void)setImageForState:(UIControlState)state
+                 withURL:(NSURL *)url
+        placeholderImage:(UIImage *)placeholderImage
+                 newSize:(CGSize)newSize
+{
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
+    
+    [self setImageForState:state withURLRequest:request placeholderImage:placeholderImage newSize:newSize success:nil failure:nil];
 }
 
 - (void)setImageForState:(UIControlState)state
                  withURL:(NSURL *)url
         placeholderImage:(UIImage *)placeholderImage
 {
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
-
-    [self setImageForState:state withURLRequest:request placeholderImage:placeholderImage success:nil failure:nil];
+    [self setImageForState:state withURL:url placeholderImage:placeholderImage newSize:CGSizeZero];
 }
 
 - (void)setImageForState:(UIControlState)state
           withURLRequest:(NSURLRequest *)urlRequest
         placeholderImage:(UIImage *)placeholderImage
+                 newSize:(CGSize)newSize
                  success:(void (^)(NSHTTPURLResponse *response, UIImage *image))success
                  failure:(void (^)(NSError *error))failure
 {
     [self cancelImageRequestOperation];
-
+    
     [self setImage:placeholderImage forState:state];
-
+    
     __weak __typeof(self)weakSelf = self;
     self.af_imageRequestOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
     self.af_imageRequestOperation.responseSerializer = [AFImageResponseSerializer serializer];
@@ -103,7 +121,13 @@
             if (success) {
                 success(operation.response, responseObject);
             } else if (responseObject) {
-                [strongSelf setImage:responseObject forState:state];
+                if (CGSizeEqualToSize(newSize, CGSizeZero)) {
+                    [strongSelf setImage:responseObject forState:state];
+                } else {
+                    UIImage *image = responseObject;
+                    UIImage *newImage = [image imageWithNewSize:newSize];
+                    [strongSelf setImage:newImage forState:state];
+                }
             }
         }
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
@@ -113,8 +137,17 @@
             }
         }
     }];
-
+    
     [[[self class] af_sharedImageRequestOperationQueue] addOperation:self.af_imageRequestOperation];
+}
+
+- (void)setImageForState:(UIControlState)state
+          withURLRequest:(NSURLRequest *)urlRequest
+        placeholderImage:(UIImage *)placeholderImage
+                 success:(void (^)(NSHTTPURLResponse *response, UIImage *image))success
+                 failure:(void (^)(NSError *error))failure
+{
+    [self setImageForState:state withURLRequest:urlRequest placeholderImage:placeholderImage newSize:CGSizeZero success:success failure:failure];
 }
 
 #pragma mark -
@@ -131,7 +164,7 @@
 {
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
-
+    
     [self setBackgroundImageForState:state withURLRequest:request placeholderImage:placeholderImage success:nil failure:nil];
 }
 
@@ -142,9 +175,9 @@
                            failure:(void (^)(NSError *error))failure
 {
     [self cancelBackgroundImageRequestOperation];
-
+    
     [self setBackgroundImage:placeholderImage forState:state];
-
+    
     __weak __typeof(self)weakSelf = self;
     self.af_backgroundImageRequestOperation = [[AFHTTPRequestOperation alloc] initWithRequest:urlRequest];
     self.af_backgroundImageRequestOperation.responseSerializer = [AFImageResponseSerializer serializer];
@@ -164,7 +197,7 @@
             }
         }
     }];
-
+    
     [[[self class] af_sharedImageRequestOperationQueue] addOperation:self.af_backgroundImageRequestOperation];
 }
 

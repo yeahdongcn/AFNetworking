@@ -22,6 +22,8 @@
 
 #import "UIImageView+AFNetworking.h"
 
+#import "UIImage+Fit.h"
+
 #import <objc/runtime.h>
 
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
@@ -46,7 +48,7 @@
         _af_sharedImageRequestOperationQueue = [[NSOperationQueue alloc] init];
         _af_sharedImageRequestOperationQueue.maxConcurrentOperationCount = NSOperationQueueDefaultMaxConcurrentOperationCount;
     });
-
+    
     return _af_sharedImageRequestOperationQueue;
 }
 
@@ -70,12 +72,12 @@
     static dispatch_once_t oncePredicate;
     dispatch_once(&oncePredicate, ^{
         _af_defaultImageCache = [[AFImageCache alloc] init];
-
+        
         [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidReceiveMemoryWarningNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * __unused notification) {
             [_af_defaultImageCache removeAllObjects];
         }];
     });
-
+    
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu"
     return objc_getAssociatedObject(self, @selector(sharedImageCache)) ?: _af_defaultImageCache;
@@ -92,7 +94,7 @@
     dispatch_once(&onceToken, ^{
         _af_defaultImageResponseSerializer = [AFImageResponseSerializer serializer];
     });
-
+    
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu"
     return objc_getAssociatedObject(self, @selector(imageResponseSerializer)) ?: _af_defaultImageResponseSerializer;
@@ -117,7 +119,7 @@
 
 - (void)setImageWithURL:(NSURL *)url
        placeholderImage:(UIImage *)placeholderImage
-            newSize:(CGSize)newSize
+                newSize:(CGSize)newSize
 {
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
@@ -129,46 +131,7 @@
             strongSelf.image = image;
         } else {
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                CGFloat sourceWidth  = image.size.width;
-                CGFloat sourceHeight = image.size.height;
-                CGFloat targetWidth  = newSize.width;
-                CGFloat targetHeight = newSize.height;
-                CGFloat scaleFactor = 0.0f;
-                CGFloat scaledWidth = targetWidth;
-                CGFloat scaledHeight = targetHeight;
-                CGPoint thumbnailPoint = CGPointMake(0.0,0.0);
-                
-                if (CGSizeEqualToSize(image.size, newSize) == NO) {
-                    CGFloat widthFactor = targetWidth / sourceWidth;
-                    CGFloat heightFactor = targetHeight / sourceHeight;
-                    
-                    if (widthFactor > heightFactor) {
-                        scaleFactor = widthFactor;  // Scale to fit height
-                    } else {
-                        scaleFactor = heightFactor; // Scale to fit width
-                    }
-                    
-                    scaledWidth  = sourceWidth * scaleFactor;
-                    scaledHeight = sourceHeight * scaleFactor;
-                    
-                    if (widthFactor > heightFactor) {
-                        // V: Top align
-                        thumbnailPoint.y = 0;
-                    } else if (widthFactor < heightFactor) {
-                        // H: Center align
-                        thumbnailPoint.x = (targetWidth - scaledWidth) * 0.5;
-                    }
-                }
-                
-                UIGraphicsBeginImageContextWithOptions(newSize, YES, image.scale);
-                CGRect thumbnailRect = CGRectZero;
-                thumbnailRect.origin = thumbnailPoint;
-                thumbnailRect.size.width  = scaledWidth;
-                thumbnailRect.size.height = scaledHeight;
-                [image drawInRect:thumbnailRect];
-                UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();
-                UIGraphicsEndImageContext();
-                
+                UIImage *newImage = [image imageWithNewSize:newSize];
                 dispatch_async(dispatch_get_main_queue(), ^{
                     strongSelf.image = newImage;
                 });
@@ -183,7 +146,7 @@
                        failure:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, NSError *error))failure
 {
     [self cancelImageRequestOperation];
-
+    
     UIImage *cachedImage = [[[self class] sharedImageCache] cachedImageForRequest:urlRequest];
     if (cachedImage) {
         if (success) {
@@ -191,7 +154,7 @@
         } else {
             self.image = cachedImage;
         }
-
+        
         self.af_imageRequestOperation = nil;
     } else {
         if (placeholderImage) {
@@ -210,7 +173,7 @@
                     strongSelf.image = responseObject;
                 }
             }
-
+            
             [[[strongSelf class] sharedImageCache] cacheImage:responseObject forRequest:urlRequest];
         } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
             if ([[urlRequest URL] isEqual:[operation.request URL]]) {
@@ -219,7 +182,7 @@
                 }
             }
         }];
-
+        
         [[[self class] af_sharedImageRequestOperationQueue] addOperation:self.af_imageRequestOperation];
     }
 }
@@ -247,7 +210,7 @@ static inline NSString * AFImageCacheKeyFromURLRequest(NSURLRequest *request) {
         default:
             break;
     }
-
+    
 	return [self objectForKey:AFImageCacheKeyFromURLRequest(request)];
 }
 
