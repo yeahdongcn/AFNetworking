@@ -125,8 +125,12 @@
                     [strongSelf setImage:responseObject forState:state];
                 } else {
                     UIImage *image = responseObject;
-                    UIImage *newImage = [image imageWithNewSize:newSize];
-                    [strongSelf setImage:newImage forState:state];
+                    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                        UIImage *newImage = [image imageWithNewSize:newSize];
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [strongSelf setImage:newImage forState:state];
+                        });
+                    });
                 }
             }
         }
