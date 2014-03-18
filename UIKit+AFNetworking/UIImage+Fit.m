@@ -42,7 +42,7 @@
             thumbnailPoint.x = (targetWidth - scaledWidth) * 0.5;
         }
         
-        UIGraphicsBeginImageContextWithOptions(newSize, NO, self.scale);
+        UIGraphicsBeginImageContextWithOptions(newSize, NO, [[UIScreen mainScreen] scale]);
         CGRect thumbnailRect = CGRectZero;
         thumbnailRect.origin = thumbnailPoint;
         thumbnailRect.size.width  = scaledWidth;
