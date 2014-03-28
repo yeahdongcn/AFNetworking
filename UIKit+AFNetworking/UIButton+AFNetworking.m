@@ -22,7 +22,7 @@
 
 #import "UIButton+AFNetworking.h"
 
-#import "UIImage+Fit.h"
+#import "UIImage+Fitness.h"
 
 #import <objc/runtime.h>
 
