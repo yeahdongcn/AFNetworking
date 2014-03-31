@@ -147,7 +147,6 @@
                                         horizontalAlignment:horizontalAlignment
                                           verticalAlignment:verticalAlignment
                                                       scale:[[UIScreen mainScreen] scale]];
-                [[[strongSelf class] sharedImageCache] cacheImage:newImage forRequest:urlRequest];
                 dispatch_async(dispatch_get_main_queue(), ^{
                     strongSelf.image = newImage;
                 });
