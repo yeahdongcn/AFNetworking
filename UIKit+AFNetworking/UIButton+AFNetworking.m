@@ -22,8 +22,6 @@
 
 #import "UIButton+AFNetworking.h"
 
-#import "UIImage+Fitness.h"
-
 #import <objc/runtime.h>
 
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
@@ -87,24 +85,51 @@
                  withURL:(NSURL *)url
         placeholderImage:(UIImage *)placeholderImage
                  newSize:(CGSize)newSize
+     horizontalAlignment:(RSHorizontalAlignment)horizontalAlignment
+       verticalAlignment:(RSVerticalAlignment)verticalAlignment
 {
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
     
-    [self setImageForState:state withURLRequest:request placeholderImage:placeholderImage newSize:newSize success:nil failure:nil];
+    [self setImageForState:state
+            withURLRequest:request
+          placeholderImage:placeholderImage
+                   newSize:newSize
+       horizontalAlignment:horizontalAlignment
+         verticalAlignment:verticalAlignment
+                   success:nil
+                   failure:nil];
+}
+
+- (void)setImageForState:(UIControlState)state
+                 withURL:(NSURL *)url
+        placeholderImage:(UIImage *)placeholderImage
+                 newSize:(CGSize)newSize
+{
+    [self setImageForState:state
+                   withURL:url
+          placeholderImage:placeholderImage
+                   newSize:newSize
+       horizontalAlignment:RSHorizontalAlignmentCenter
+         verticalAlignment:RSVerticalAlignmentTop];
 }
 
 - (void)setImageForState:(UIControlState)state
                  withURL:(NSURL *)url
         placeholderImage:(UIImage *)placeholderImage
 {
-    [self setImageForState:state withURL:url placeholderImage:placeholderImage newSize:CGSizeZero];
+    [self setImageForState:state
+                   withURL:url
+          placeholderImage:placeholderImage
+                   newSize:CGSizeZero];
 }
 
 - (void)setImageForState:(UIControlState)state
           withURLRequest:(NSURLRequest *)urlRequest
         placeholderImage:(UIImage *)placeholderImage
                  newSize:(CGSize)newSize
+     horizontalAlignment:(RSHorizontalAlignment)horizontalAlignment
+       verticalAlignment:(RSVerticalAlignment)verticalAlignment
                  success:(void (^)(NSHTTPURLResponse *response, UIImage *image))success
                  failure:(void (^)(NSError *error))failure
 {
@@ -126,7 +151,7 @@
                 } else {
                     UIImage *image = responseObject;
                     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                        UIImage *newImage = [image imageWithNewSize:newSize];
+                        UIImage *newImage = [image imageWithNewSize:newSize horizontalAlignment:horizontalAlignment verticalAlignment:verticalAlignment scale:[[UIScreen mainScreen] scale]];
                         dispatch_async(dispatch_get_main_queue(), ^{
                             [strongSelf setImage:newImage forState:state];
                         });
@@ -151,7 +176,14 @@
                  success:(void (^)(NSHTTPURLResponse *response, UIImage *image))success
                  failure:(void (^)(NSError *error))failure
 {
-    [self setImageForState:state withURLRequest:urlRequest placeholderImage:placeholderImage newSize:CGSizeZero success:success failure:failure];
+    [self setImageForState:state
+            withURLRequest:urlRequest
+          placeholderImage:placeholderImage
+                   newSize:CGSizeZero
+       horizontalAlignment:RSHorizontalAlignmentCenter
+         verticalAlignment:RSVerticalAlignmentTop
+                   success:success
+                   failure:failure];
 }
 
 #pragma mark -

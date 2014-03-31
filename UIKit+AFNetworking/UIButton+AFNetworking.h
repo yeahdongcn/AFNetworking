@@ -24,6 +24,8 @@
 
 #import <Availability.h>
 
+#import "UIImage+Fitness.h"
+
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
 
 #import <UIKit/UIKit.h>
@@ -69,6 +71,13 @@
 
 - (void)setImageForState:(UIControlState)state
                  withURL:(NSURL *)url
+        placeholderImage:(UIImage *)placeholderImage
+                 newSize:(CGSize)newSize
+     horizontalAlignment:(RSHorizontalAlignment)horizontalAlignment
+       verticalAlignment:(RSVerticalAlignment)verticalAlignment;
+
+- (void)setImageForState:(UIControlState)state
+                 withURL:(NSURL *)url
         placeholderImage:(UIImage *)placeholderImage;
 
 
@@ -89,6 +98,8 @@
           withURLRequest:(NSURLRequest *)urlRequest
         placeholderImage:(UIImage *)placeholderImage
                  newSize:(CGSize)newSize
+     horizontalAlignment:(RSHorizontalAlignment)horizontalAlignment
+       verticalAlignment:(RSVerticalAlignment)verticalAlignment
                  success:(void (^)(NSHTTPURLResponse *response, UIImage *image))success
                  failure:(void (^)(NSError *error))failure;
 

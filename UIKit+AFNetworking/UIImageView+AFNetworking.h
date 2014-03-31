@@ -24,6 +24,8 @@
 
 #import <Availability.h>
 
+#import "UIImage+Fitness.h"
+
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
 
 #import <UIKit/UIKit.h>
@@ -95,6 +97,12 @@
 - (void)setImageWithURL:(NSURL *)url
        placeholderImage:(UIImage *)placeholderImage
                 newSize:(CGSize)newSize;
+
+- (void)setImageWithURL:(NSURL *)url
+       placeholderImage:(UIImage *)placeholderImage
+                newSize:(CGSize)newSize
+    horizontalAlignment:(RSHorizontalAlignment)horizontalAlignment
+      verticalAlignment:(RSVerticalAlignment)verticalAlignment;
 
 /**
  Asynchronously downloads an image from the specified URL request, and sets it once the request is finished. Any previous image request for the receiver will be cancelled.

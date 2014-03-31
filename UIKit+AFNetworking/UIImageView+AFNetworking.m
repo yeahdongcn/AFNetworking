@@ -22,8 +22,6 @@
 
 #import "UIImageView+AFNetworking.h"
 
-#import "UIImage+Fitness.h"
-
 #import <objc/runtime.h>
 
 #if defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
@@ -121,17 +119,35 @@
        placeholderImage:(UIImage *)placeholderImage
                 newSize:(CGSize)newSize
 {
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
+    [self setImageWithURL:url
+         placeholderImage:placeholderImage
+                  newSize:newSize
+      horizontalAlignment:RSHorizontalAlignmentCenter
+        verticalAlignment:RSVerticalAlignmentTop];
+}
+
+
+- (void)setImageWithURL:(NSURL *)url
+       placeholderImage:(UIImage *)placeholderImage
+                newSize:(CGSize)newSize
+    horizontalAlignment:(RSHorizontalAlignment)horizontalAlignment
+      verticalAlignment:(RSVerticalAlignment)verticalAlignment
+{
+    NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:url];
+    [urlRequest addValue:@"image/*" forHTTPHeaderField:@"Accept"];
     
     __weak __typeof(self)weakSelf = self;
-    [self setImageWithURLRequest:request placeholderImage:placeholderImage success:^(__unused NSURLRequest *aRequest, __unused NSHTTPURLResponse *aResponse, UIImage *image) {
+    [self setImageWithURLRequest:urlRequest placeholderImage:placeholderImage success:^(__unused NSURLRequest *aRequest, __unused NSHTTPURLResponse *aResponse, UIImage *image) {
         __strong __typeof(weakSelf)strongSelf = weakSelf;
         if (CGSizeEqualToSize(newSize, CGSizeZero)) {
             strongSelf.image = image;
         } else {
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                UIImage *newImage = [image imageWithNewSize:newSize];
+                UIImage *newImage = [image imageWithNewSize:newSize
+                                        horizontalAlignment:horizontalAlignment
+                                          verticalAlignment:verticalAlignment
+                                                      scale:[[UIScreen mainScreen] scale]];
+                [[[strongSelf class] sharedImageCache] cacheImage:newImage forRequest:urlRequest];
                 dispatch_async(dispatch_get_main_queue(), ^{
                     strongSelf.image = newImage;
                 });
