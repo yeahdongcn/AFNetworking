@@ -136,6 +136,12 @@
     NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:url];
     [urlRequest addValue:@"image/*" forHTTPHeaderField:@"Accept"];
     
+    UIImage *cachedImage = [[[self class] sharedImageCache] cachedImageForRequest:urlRequest size:newSize];
+    if (cachedImage) {
+        self.image = cachedImage;
+        return;
+    }
+    
     __weak __typeof(self)weakSelf = self;
     [self setImageWithURLRequest:urlRequest placeholderImage:placeholderImage success:^(__unused NSURLRequest *aRequest, __unused NSHTTPURLResponse *aResponse, UIImage *image) {
         __strong __typeof(weakSelf)strongSelf = weakSelf;
@@ -147,6 +153,7 @@
                                         horizontalAlignment:horizontalAlignment
                                           verticalAlignment:verticalAlignment
                                                       scale:[[UIScreen mainScreen] scale]];
+                [[[strongSelf class] sharedImageCache] cacheImage:image forRequest:urlRequest size:newSize];
                 dispatch_async(dispatch_get_main_queue(), ^{
                     strongSelf.image = newImage;
                 });
@@ -217,7 +224,8 @@ static inline NSString * AFImageCacheKeyFromURLRequest(NSURLRequest *request) {
 
 @implementation AFImageCache
 
-- (UIImage *)cachedImageForRequest:(NSURLRequest *)request {
+- (UIImage *)cachedImageForRequest:(NSURLRequest *)request
+{
     switch ([request cachePolicy]) {
         case NSURLRequestReloadIgnoringCacheData:
         case NSURLRequestReloadIgnoringLocalAndRemoteCacheData:
@@ -229,11 +237,34 @@ static inline NSString * AFImageCacheKeyFromURLRequest(NSURLRequest *request) {
 	return [self objectForKey:AFImageCacheKeyFromURLRequest(request)];
 }
 
+- (UIImage *)cachedImageForRequest:(NSURLRequest *)request
+                              size:(CGSize)size
+{
+    switch ([request cachePolicy]) {
+        case NSURLRequestReloadIgnoringCacheData:
+        case NSURLRequestReloadIgnoringLocalAndRemoteCacheData:
+            return nil;
+        default:
+            break;
+    }
+    
+	return [self objectForKey:[NSString stringWithFormat:@"%@%f%f", AFImageCacheKeyFromURLRequest(request), size.width, size.height]];
+}
+
 - (void)cacheImage:(UIImage *)image
         forRequest:(NSURLRequest *)request
 {
     if (image && request) {
         [self setObject:image forKey:AFImageCacheKeyFromURLRequest(request)];
+    }
+}
+
+- (void)cacheImage:(UIImage *)image
+        forRequest:(NSURLRequest *)request
+              size:(CGSize)size
+{
+    if (image && request) {
+        [self setObject:image forKey:[NSString stringWithFormat:@"%@%f%f", AFImageCacheKeyFromURLRequest(request), size.width, size.height]];
     }
 }
 

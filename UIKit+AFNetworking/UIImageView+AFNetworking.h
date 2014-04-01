@@ -144,6 +144,9 @@
  */
 - (UIImage *)cachedImageForRequest:(NSURLRequest *)request;
 
+- (UIImage *)cachedImageForRequest:(NSURLRequest *)request
+                              size:(CGSize)size;
+
 /**
  Caches a particular image for the specified request.
  
@@ -152,6 +155,11 @@
  */
 - (void)cacheImage:(UIImage *)image
         forRequest:(NSURLRequest *)request;
+
+- (void)cacheImage:(UIImage *)image
+        forRequest:(NSURLRequest *)request
+              size:(CGSize)size;
+
 @end
 
 #endif
